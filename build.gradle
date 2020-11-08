@@ -9,11 +9,17 @@ version = '1.0'
 description = 'Adds FFA'
 
 repositories {
+
     jcenter()
+    maven {
+    	name = 'enginehub-repo'
+    	url = 'https://maven.enginehub.org/repo/'
+    }
     maven {
         name = 'sponge-repo'
         url = 'https://repo.spongepowered.org/maven'
     }
+    
 }
 
 dependencies {
@@ -24,4 +30,9 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     
     compile 'org.spongepowered:spongeapi:7.2.0'
+    
+    api 'com.sk89q.worldedit:worldedit-core:6.1'
+    
+    api 'com.sk89q.worldedit:worldedit-sponge:6.1.7-SNAPSHOT'
+    
 }
