@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Optional;
 
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.block.tileentity.carrier.Chest;
@@ -23,6 +24,9 @@ import org.spongepowered.api.entity.EntityTypes;
 import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.entity.living.player.gamemode.GameModes;
 import org.spongepowered.api.event.Listener;
+import org.spongepowered.api.event.cause.Cause;
+import org.spongepowered.api.event.cause.entity.damage.source.DamageSource;
+import org.spongepowered.api.event.cause.entity.damage.source.DamageSources;
 import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
@@ -73,7 +77,11 @@ public class FFA {
 	public static Location<World> equipLocation;
 	public static Location<World> pvpLocation;
 	public static Location<World> chestLocation;
+	public static float tickrate;
+	public static int spreadPlayerRadius;
 	public static HashMap<String, Inventory> inves = new HashMap<>();
+	
+	public static boolean resetMap=true;
 	
 	public static ArrayList<String> players = new ArrayList<>();
 	
@@ -94,6 +102,7 @@ public class FFA {
 		if (node.getNode("pvpPos").getString() == null) node.getNode("pvpPos").setValue("50 100 50");
 		if (node.getNode("chestPos").getString() == null) node.getNode("chestPos").setValue("100 100 50");
 		if (node.getNode("tickrate").getString() == null) node.getNode("tickrate").setValue(20);
+		if(node.getNode("spreadPlayerRadius").getString() == null) node.getNode("spreadPlayerRadius").setValue(130);
 		configManager.save(node);
 		
 		String el = node.getNode("equipPos").getString();
@@ -104,16 +113,22 @@ public class FFA {
 		
 		String cl = node.getNode("chestPos").getString();
 		chestLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(cl.split(" ")[0]), Integer.parseInt(cl.split(" ")[1]), Integer.parseInt(cl.split(" ")[2]));
+		
+		tickrate=Float.parseFloat(node.getNode("tickrate").getString());
+		
+		spreadPlayerRadius=Integer.parseInt(node.getNode("spreadPlayerRadius").getString());
 		return node;
 	}
 	
 	public void startGame(ConfigurationNode node) throws CommandException {
 		isRunning = true;
-		Sponge.getCommandManager().get("execute").get().getCallable().process(Sponge.getServer().getConsole(), "@p -40 8 -155 spreadplayers ~ ~ 50 150 false @a");
-		Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), node.getNode("tickrate").getInt() + "");
+		Sponge.getCommandManager().get("execute").get().getCallable().process(Sponge.getServer().getConsole(), "@p "+pvpLocation.getBlockX()+" "+pvpLocation.getBlockY()+" "+pvpLocation.getBlockZ()+" "+" spreadplayers ~ ~ 50 130 false @a");
+		Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), Float.toString(tickrate));
 		for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
 			player.offer(Keys.GAME_MODE, GameModes.SURVIVAL);
-			player.health().set(20.0);
+			player.offer(Keys.HEALTH, 20D);
+			player.offer(Keys.SATURATION, 20D);
+			player.offer(Keys.EXPERIENCE_LEVEL, 0);
 			player.sendMessage(Text.of("§b»§7 The Game has begun. Kill everyone to win"));
 		}
 	}
@@ -121,11 +136,17 @@ public class FFA {
 	@Listener
 	public void onServer(GameStartedServerEvent e) throws IOException, ObjectMappingException {
 		ConfigurationNode node = loadConfig();
+		
+		//Command ready
 		CommandSpec ready = CommandSpec.builder().description(Text.of("Ready!!!!!!!")).executor(new CommandExecutor() {
 			
 			@Override
 			public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
-				if (players.contains(src.getName())) return CommandResult.builder().successCount(1).build();
+				if (Sponge.getGame().getServer().getOnlinePlayers().size()==1) {
+					for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) player.sendMessage(Text.of("§b»§c At least 2 players are required"));
+					return CommandResult.builder().successCount(1).build();
+				}
+				if (players.contains(src.getName())||isRunning==true) return CommandResult.builder().successCount(1).build();
 				players.add(src.getName());
 				
 				for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) player.sendMessage(Text.of("§b»§a " + src.getName() + "§7 is now ready!"));
@@ -136,6 +157,8 @@ public class FFA {
 				return CommandResult.builder().successCount(1).build();
 			}
 		}).build();
+		
+		//Command mapreload
 		CommandSpec mapreload = CommandSpec.builder().description(Text.of("Reload the map")).permission("mgw.edit").executor(new CommandExecutor() {
 			
 			@Override
@@ -148,6 +171,8 @@ public class FFA {
 				return CommandResult.builder().successCount(1).affectedEntities(Sponge.getGame().getServer().getOnlinePlayers().size()).build();
 			}
 		}).build();
+		
+		//Command forceend
 		CommandSpec forceend = CommandSpec.builder().description(Text.of("Forceend the game")).permission("mgw.start").executor(new CommandExecutor() {
 			
 			@Override
@@ -156,6 +181,8 @@ public class FFA {
 				return CommandResult.builder().successCount(1).affectedEntities(Sponge.getGame().getServer().getOnlinePlayers().size()).build();
 			}
 		}).build();
+		
+		//Command setitems
 		CommandSpec editInv = CommandSpec.builder().description(Text.of("Change the Inventory")).permission("mgw.edit").executor(new CommandExecutor() {
 			
 			@Override
@@ -167,6 +194,8 @@ public class FFA {
 				return CommandResult.builder().successCount(1).affectedItems(0).build();
 			}
 		}).build();
+		
+		//Command forcestart
 		CommandSpec forcestart = CommandSpec.builder().description(Text.of("Forcestart")).permission("mgw.start").executor(new CommandExecutor() {
 			
 			@Override
@@ -177,6 +206,17 @@ public class FFA {
 				return CommandResult.builder().successCount(1).build();
 			}
 		}).build();
+		//Command stopmapreload
+			CommandSpec stopmapreload = CommandSpec.builder().description(Text.of("Stops reloading the map after the round is over")).permission("mgw.edit").executor(new CommandExecutor() {
+					
+				@Override
+				public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+					resetMap=!resetMap;
+					return CommandResult.builder().successCount(1).affectedEntities(Sponge.getGame().getServer().getOnlinePlayers().size()).build();
+				}
+			}).build();
+		
+		//Command items
 		CommandSpec getInv = CommandSpec.builder().description(Text.of("Open the Inventory")).executor(new CommandExecutor() {
 			
 			@Override
@@ -216,19 +256,37 @@ public class FFA {
 		Sponge.getCommandManager().register(this, mapreload, "reloadmap");
 		Sponge.getCommandManager().register(this, ready, "ready");
 		Sponge.getCommandManager().register(this, editInv, "setitems");
+		Sponge.getCommandManager().register(this, stopmapreload, "reloadmapstop");
 	}
 	
 	@Listener
 	public void onLogin(ClientConnectionEvent.Join e) {
 		e.setMessageCancelled(true);
+		Cause cause=e.getCause();
+		Player player= cause.first(Player.class).get();
 		if (isRunning) {
-			e.getTargetEntity().offer(Keys.GAME_MODE, GameModes.SPECTATOR);
-			e.getTargetEntity().getInventory().clear();
+			player.offer(Keys.GAME_MODE, GameModes.SPECTATOR);
+			try {
+				Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), Float.toString(tickrate)+" "+player.getName());
+			} catch (CommandException e1) {
+				e1.printStackTrace();
+			}
+			player.sendMessage(Text.of("§b»§7 A game is already running, after the round you will participate"));
 		} else {
-			e.getTargetEntity().setLocation(equipLocation);
-			e.getTargetEntity().offer(Keys.GAME_MODE, GameModes.ADVENTURE);
-			e.getTargetEntity().getInventory().clear();
-			e.getTargetEntity().sendMessage(Text.of("§b»§7 Type §a/items §7to see all the items you can get. When you are ready, type §a/ready§7."));
+			player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
+			try {
+				Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), "20 "+player.getName());
+			} catch (CommandException e1) {
+				e1.printStackTrace();
+			}
+			player.sendMessage(Text.of("§b»§7 Type §a/items §7to see all the items you can get. When you are ready, type §a/ready§7."));
+		}
+		player.getInventory().clear();
+		player.setLocation(equipLocation);
+		try {
+			Sponge.getCommandManager().get("spawnpoint").get().getCallable().process(Sponge.getServer().getConsole(), player.getName());
+		} catch (CommandException e1) {
+			e1.printStackTrace();
 		}
 	}
 
@@ -236,39 +294,59 @@ public class FFA {
 		if (!isRunning) return;
 		players.clear();
 		inves.clear();
-		isRunning = false;
 		for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
 			player.setLocation(equipLocation);
 			player.getInventory().clear();
-			player.sendMessage(Text.of("§b»§7 The Game has ended"));
+			player.offer(Keys.HEALTH, 20D);
+			player.offer(Keys.SATURATION, 20D);
+			player.offer(Keys.EXPERIENCE_LEVEL, 0);
+			player.sendMessage(Text.of("§b»§e The Game has ended"));
+			player.sendMessage(Text.of("§b»§7 Type §a/items §7to see all the items you can get. When you are ready, type §a/ready§7."));
 			player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
 		}
 		try {
 			Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), "20");
-			loadMap();
-		} catch (Exception e1) {
-			e1.printStackTrace();
+		} catch (CommandException e) {
+			e.printStackTrace();
 		}
+		try {
+			Sponge.getCommandManager().get("kill").get().getCallable().process(Sponge.getServer().getConsole(), "@e[type=!player]");
+		} catch (CommandException e) {
+			e.printStackTrace();
+		}
+		if(resetMap==true) {
+			try {
+				loadMap();
+			} catch (Exception e1) {
+				e1.printStackTrace();
+			}
+		}
+		isRunning = false;
 	}
 	
 	@Listener
 	public void onDrop(DropItemEvent e) {
-		if (!isRunning) e.setCancelled(true);
+		Cause cause=e.getCause();
+		Optional<Player> player= cause.first(Player.class);
+		if (!isRunning&&!player.get().hasPermission("mgw.bypasslobby")) e.setCancelled(true);
 	}
 	
 	@Listener
 	public void onPvP(DamageEntityEvent e) {
-		if (!isRunning) e.setCancelled(true);
+		Cause cause=e.getCause();
+		Optional<DamageSource> source=cause.first(DamageSource.class);
+		if (!isRunning&&source.get()!=DamageSources.VOID) e.setCancelled(true);
 	}
 	
 	@Listener
 	public void onLeave(ClientConnectionEvent.Disconnect e) throws CommandException {
 		players.remove(e.getTargetEntity().getName());
-		if (players.size() == 1) endGame();
+		if (players.size() <= 1&&isRunning==true) endGame();
 	}
 	
 	@Listener
 	public void onDeath(DestructEntityEvent.Death e) throws CommandException {
+		
 		if (e.getTargetEntity().getType() == EntityTypes.PLAYER) {
 			if (players.contains(((Player) e.getTargetEntity()).getName())) {
 				players.remove(((Player) e.getTargetEntity()).getName());
@@ -288,9 +366,11 @@ public class FFA {
 		EditSession sess = WorldEdit.getInstance().getEditSessionFactory().getEditSession(SpongeWorldEdit.inst().getWorld(Sponge.getServer().getWorlds().iterator().next()), -1);
 		
 		File schem = new File(privateConfigDir.toString(), "map.schem");
-		
-		CuboidClipboard cl = MCEditSchematicFormat.getFormat(schem).load(schem);
-		cl.paste(sess, new Vector(0, 0, 0), false, true);
+		if(schem.exists()) {
+			CuboidClipboard cl = MCEditSchematicFormat.getFormat(schem).load(schem);
+			cl.paste(sess, new Vector(0, 0, 0), false, true);
+		}else {
+			System.out.println("No schematic file found!");
+		}
 	}
-	
 }
