@@ -115,6 +115,7 @@ public class FFA {
 						player.playSound(SoundTypes.ENTITY_WOLF_HOWL, equipLocation.getPosition(), 1);
 						player.offer(Keys.GAME_MODE, GameModes.SURVIVAL);
 						player.offer(Keys.INVISIBLE, false);
+						player.health().set(20.0);
 						player.sendMessage(Text.of("户7 The Game has begun. Kill everyone to win"));
 					}
 				}
@@ -142,6 +143,24 @@ public class FFA {
 				return CommandResult.builder().successCount(1).affectedEntities(Sponge.getGame().getServer().getOnlinePlayers().size()).affectedItems(items).build();
 			}
 		}).build();
+		CommandSpec forceend = CommandSpec.builder().description(Text.of("Forceend the game")).permission("mgw.start").executor(new CommandExecutor() {
+			
+			@Override
+			public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+				for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
+					
+					players.clear();
+					player.setLocation(equipLocation);
+					player.playSound(SoundTypes.ENTITY_CAT_PURR, equipLocation.getPosition(), 1);
+					player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
+					
+					player.getInventory().clear();
+					player.sendMessage(Text.of("户7 The Game has been force ended"));
+					isRunning = false;
+				}
+				return CommandResult.builder().successCount(1).affectedEntities(Sponge.getGame().getServer().getOnlinePlayers().size()).build();
+			}
+		}).build();
 		CommandSpec editInv = CommandSpec.builder().description(Text.of("Change the Inventory")).permission("mgw.edit").executor(new CommandExecutor() {
 			
 			@Override
@@ -151,6 +170,22 @@ public class FFA {
 				Inventory source = ((Chest) chestLocation.getTileEntity().get()).getDoubleChestInventory().get();
 				p.openInventory(source);
 				return CommandResult.builder().successCount(1).affectedItems(0).build();
+			}
+		}).build();
+		CommandSpec forcestart = CommandSpec.builder().description(Text.of("Forcestart")).permission("mgw.edit").executor(new CommandExecutor() {
+			
+			@Override
+			public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
+				for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
+					players.add((Player) src);
+					player.setLocation(pvpLocation);
+					player.playSound(SoundTypes.ENTITY_WOLF_HOWL, equipLocation.getPosition(), 1);
+					player.offer(Keys.GAME_MODE, GameModes.SURVIVAL);
+					player.offer(Keys.INVISIBLE, false);
+					player.health().set(20.0);
+					player.sendMessage(Text.of("户7 The Game has been force started"));
+				}
+				return CommandResult.builder().successCount(1).build();
 			}
 		}).build();
 		CommandSpec getInv = CommandSpec.builder().description(Text.of("Open the Inventory")).executor(new CommandExecutor() {
@@ -187,6 +222,8 @@ public class FFA {
 		}).build();
 		Sponge.getCommandManager().register(this, start, "equip");
 		Sponge.getCommandManager().register(this, getInv, "items");
+		Sponge.getCommandManager().register(this, forceend, "forceend");
+		Sponge.getCommandManager().register(this, forcestart, "forcestart");
 		Sponge.getCommandManager().register(this, ready, "ready");
 		Sponge.getCommandManager().register(this, editInv, "setitems");
 	}
@@ -209,6 +246,23 @@ public class FFA {
 	public void onBlock(ChangeBlockEvent.Break e) {
 		for (Transaction<BlockSnapshot> s : e.getTransactions()) {
 			snapshots.add(s);
+		}
+	}
+	
+	@Listener
+	public void onLeave(ClientConnectionEvent.Disconnect e) {
+		if (Sponge.getServer().getOnlinePlayers().size() <= 2) {
+			for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
+				
+				players.clear();
+				player.setLocation(equipLocation);
+				player.playSound(SoundTypes.ENTITY_CAT_PURR, equipLocation.getPosition(), 1);
+				player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
+				
+				player.getInventory().clear();
+				player.sendMessage(Text.of("户7 The Game has been force ended"));
+				isRunning = false;
+			}
 		}
 	}
 	
