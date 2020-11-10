@@ -5,3 +5,8 @@
 build
 .classpath
 bin/
+gradlew.bat
+gradlew
+.project
+gradle/
+.settings/
