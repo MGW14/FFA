@@ -65,7 +65,7 @@ public class FFA {
 
 	@Inject
 	@DefaultConfig(sharedRoot = true)
-	private ConfigurationLoader<CommentedConfigurationNode> configManager;
+	private static ConfigurationLoader<CommentedConfigurationNode> configManager;
 
 	@Inject
 	@ConfigDir(sharedRoot = false)
@@ -85,9 +85,13 @@ public class FFA {
 	
 	public static ArrayList<String> players = new ArrayList<>();
 	
+	public static ConfigurationNode node;
+	
+	public static String mapname;
+	
 	public ConfigurationNode loadConfig() throws IOException {
 		potentialFile = Paths.get(privateConfigDir.toString(), "config.yml");
-		ConfigurationNode node;
+		
 		if (!potentialFile.toFile().exists()) {
 			privateConfigDir.toFile().mkdir();
 			potentialFile.toFile().createNewFile();
@@ -103,23 +107,32 @@ public class FFA {
 		if (node.getNode("chestPos").getString() == null) node.getNode("chestPos").setValue("100 100 50");
 		if (node.getNode("tickrate").getString() == null) node.getNode("tickrate").setValue(20);
 		if(node.getNode("spreadPlayerRadius").getString() == null) node.getNode("spreadPlayerRadius").setValue(130);
+		if(node.getNode("mapname").getString() == null) node.getNode("mapname").setValue("map");
 		configManager.save(node);
 		
-		String el = node.getNode("equipPos").getString();
-		equipLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(el.split(" ")[0]), Integer.parseInt(el.split(" ")[1]), Integer.parseInt(el.split(" ")[2]));
+		String[] el = node.getNode("equipPos").getString().split(" ");
+		equipLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(el[0]), Integer.parseInt(el[1]), Integer.parseInt(el[2]));
 		
-		String pl = node.getNode("pvpPos").getString();
-		pvpLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(pl.split(" ")[0]), Integer.parseInt(pl.split(" ")[1]), Integer.parseInt(pl.split(" ")[2]));
+		String[] pl = node.getNode("pvpPos").getString().split(" ");
+		pvpLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(pl[0]), Integer.parseInt(pl[1]), Integer.parseInt(pl[2]));
 		
-		String cl = node.getNode("chestPos").getString();
-		chestLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(cl.split(" ")[0]), Integer.parseInt(cl.split(" ")[1]), Integer.parseInt(cl.split(" ")[2]));
+		String[] cl = node.getNode("chestPos").getString().split(" ");
+		chestLocation = new Location<World>(Sponge.getServer().getWorlds().iterator().next(), Integer.parseInt(cl[0]), Integer.parseInt(cl[1]), Integer.parseInt(cl[2]));
 		
 		tickrate=Float.parseFloat(node.getNode("tickrate").getString());
 		
 		spreadPlayerRadius=Integer.parseInt(node.getNode("spreadPlayerRadius").getString());
+		
+		mapname=node.getNode("mapname").toString();
 		return node;
 	}
-	
+	public static void saveConfig() {
+		try {
+			configManager.save(node);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	public void startGame(ConfigurationNode node) throws CommandException {
 		isRunning = true;
 		Sponge.getCommandManager().get("execute").get().getCallable().process(Sponge.getServer().getConsole(), "@p "+pvpLocation.getBlockX()+" "+pvpLocation.getBlockY()+" "+pvpLocation.getBlockZ()+" "+" spreadplayers ~ ~ 50 130 false @a");
@@ -135,7 +148,7 @@ public class FFA {
 	
 	@Listener
 	public void onServer(GameStartedServerEvent e) throws IOException, ObjectMappingException {
-		ConfigurationNode node = loadConfig();
+		node = loadConfig();
 		
 		//Command ready
 		CommandSpec ready = CommandSpec.builder().description(Text.of("Ready!!!!!!!")).executor(new CommandExecutor() {
@@ -250,6 +263,7 @@ public class FFA {
 			}
 		}).build();
 		
+		
 		Sponge.getCommandManager().register(this, getInv, "items");
 		Sponge.getCommandManager().register(this, forceend, "forceend");
 		Sponge.getCommandManager().register(this, forcestart, "forcestart");
@@ -257,6 +271,7 @@ public class FFA {
 		Sponge.getCommandManager().register(this, ready, "ready");
 		Sponge.getCommandManager().register(this, editInv, "setitems");
 		Sponge.getCommandManager().register(this, stopmapreload, "reloadmapstop");
+		Sponge.getCommandManager().register(this, new CommandFFAConfig(), "ffa");
 	}
 	
 	@Listener
@@ -365,7 +380,7 @@ public class FFA {
 	public void loadMap() throws Exception {
 		EditSession sess = WorldEdit.getInstance().getEditSessionFactory().getEditSession(SpongeWorldEdit.inst().getWorld(Sponge.getServer().getWorlds().iterator().next()), -1);
 		
-		File schem = new File(privateConfigDir.toString(), "map.schem");
+		File schem = new File(privateConfigDir.toString(), mapname+".schem");
 		if(schem.exists()) {
 			CuboidClipboard cl = MCEditSchematicFormat.getFormat(schem).load(schem);
 			cl.paste(sess, new Vector(0, 0, 0), false, true);
