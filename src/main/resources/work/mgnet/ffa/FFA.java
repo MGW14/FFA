@@ -123,7 +123,7 @@ public class FFA {
 		
 		spreadPlayerRadius=Integer.parseInt(node.getNode("spreadPlayerRadius").getString());
 		
-		mapname=node.getNode("mapname").toString();
+		mapname=node.getNode("mapname").getString();
 		return node;
 	}
 	public static void saveConfig() {
@@ -135,12 +135,12 @@ public class FFA {
 	}
 	public void startGame(ConfigurationNode node) throws CommandException {
 		isRunning = true;
-		Sponge.getCommandManager().get("execute").get().getCallable().process(Sponge.getServer().getConsole(), "@p "+pvpLocation.getBlockX()+" "+pvpLocation.getBlockY()+" "+pvpLocation.getBlockZ()+" "+" spreadplayers ~ ~ 50 130 false @a");
+		Sponge.getCommandManager().get("spreadplayers").get().getCallable().process(Sponge.getServer().getConsole(), pvpLocation.getBlockX() + " " + pvpLocation.getBlockZ() + " 25 " + spreadPlayerRadius + " false @a");
 		Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), Float.toString(tickrate));
 		for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
 			player.offer(Keys.GAME_MODE, GameModes.SURVIVAL);
 			player.offer(Keys.HEALTH, 20D);
-			player.offer(Keys.SATURATION, 20D);
+			player.offer(Keys.FOOD_LEVEL, 20);
 			player.offer(Keys.EXPERIENCE_LEVEL, 0);
 			player.sendMessage(Text.of("§b»§7 The Game has begun. Kill everyone to win"));
 		}
@@ -313,7 +313,7 @@ public class FFA {
 			player.setLocation(equipLocation);
 			player.getInventory().clear();
 			player.offer(Keys.HEALTH, 20D);
-			player.offer(Keys.SATURATION, 20D);
+			player.offer(Keys.FOOD_LEVEL, 20);
 			player.offer(Keys.EXPERIENCE_LEVEL, 0);
 			player.sendMessage(Text.of("§b»§e The Game has ended"));
 			player.sendMessage(Text.of("§b»§7 Type §a/items §7to see all the items you can get. When you are ready, type §a/ready§7."));
