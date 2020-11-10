@@ -29,11 +29,15 @@ public class CommandFFAConfig implements CommandCallable{
 			FFA.tickrate=setFloat("tickrate", args);
 		}else if(args[0].equalsIgnoreCase("spreadPlayerRadius")){
 			FFA.spreadPlayerRadius=setInt("spreadPlayerRadius", args);
+		}else if(args[0].equalsIgnoreCase("spreadPlayerDistance")) {
+			FFA.spreadPlayerDistance=setInt("spreadPlayerDistance", args);
 		}else if(args[0].equalsIgnoreCase("mapname")) {
 			FFA.mapname=setString("mapname", args);
 		}else {
-			source.sendMessage(Text.of("/ffa pvpPos|chestPos|equipPos|tickrate|spreadPlayerRadius|mapname"));
+			source.sendMessage(Text.of("§b» §7/ffa pvpPos | chestPos | equipPos | tickrate | spreadPlayerRadius | spreadPlayerDistance | mapname"));
+			return CommandResult.builder().successCount(1).build();
 		}
+		source.sendMessage(Text.of("§b» §7Successfully changed config option "+args[0]));
 		FFA.saveConfig();
 		return CommandResult.builder().successCount(1).build();
 	}
@@ -97,6 +101,7 @@ public class CommandFFAConfig implements CommandCallable{
 		liste.add("equipPos");
 		liste.add("tickrate");
 		liste.add("spreadPlayerRadius");
+		liste.add("spreadPlayerDistance");
 		liste.add("mapname");
 		return liste;
 	}
