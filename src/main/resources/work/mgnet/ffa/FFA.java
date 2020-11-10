@@ -70,6 +70,8 @@ public class FFA {
 	@Inject
 	@ConfigDir(sharedRoot = false)
 	private Path privateConfigDir;
+
+	public static int spreadPlayerDistance;
 	
 	public static Path potentialFile;
 	public static boolean isRunning = false;
@@ -107,6 +109,7 @@ public class FFA {
 		if (node.getNode("chestPos").getString() == null) node.getNode("chestPos").setValue("100 100 50");
 		if (node.getNode("tickrate").getString() == null) node.getNode("tickrate").setValue(20);
 		if(node.getNode("spreadPlayerRadius").getString() == null) node.getNode("spreadPlayerRadius").setValue(130);
+		if(node.getNode("spreadPlayerDistance").getString() == null) node.getNode("spreadPlayerDistance").setValue(25);
 		if(node.getNode("mapname").getString() == null) node.getNode("mapname").setValue("map");
 		configManager.save(node);
 		
@@ -123,6 +126,8 @@ public class FFA {
 		
 		spreadPlayerRadius=Integer.parseInt(node.getNode("spreadPlayerRadius").getString());
 		
+		spreadPlayerDistance=Integer.parseInt(node.getNode("spreadPlayerDistance").getString());
+		
 		mapname=node.getNode("mapname").getString();
 		return node;
 	}
@@ -135,8 +140,10 @@ public class FFA {
 	}
 	public void startGame(ConfigurationNode node) throws CommandException {
 		isRunning = true;
-		Sponge.getCommandManager().get("spreadplayers").get().getCallable().process(Sponge.getServer().getConsole(), pvpLocation.getBlockX() + " " + pvpLocation.getBlockZ() + " 25 " + spreadPlayerRadius + " false @a");
+		Sponge.getCommandManager().get("spreadplayers").get().getCallable().process(Sponge.getServer().getConsole(), pvpLocation.getBlockX() + " " + pvpLocation.getBlockZ() + " "+spreadPlayerDistance+" " + spreadPlayerRadius + " false @a");
 		Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), Float.toString(tickrate));
+		Sponge.getCommandManager().get("difficulty").get().getCallable().process(Sponge.getServer().getConsole(), "1");
+		Sponge.getCommandManager().get("effect").get().getCallable().process(Sponge.getServer().getConsole(), "@a clear");
 		for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
 			player.offer(Keys.GAME_MODE, GameModes.SURVIVAL);
 			player.offer(Keys.HEALTH, 20D);
@@ -318,6 +325,16 @@ public class FFA {
 			player.sendMessage(Text.of("§b»§e The Game has ended"));
 			player.sendMessage(Text.of("§b»§7 Type §a/items §7to see all the items you can get. When you are ready, type §a/ready§7."));
 			player.offer(Keys.GAME_MODE, GameModes.ADVENTURE);
+		}
+		try {
+			Sponge.getCommandManager().get("difficulty").get().getCallable().process(Sponge.getServer().getConsole(), "0");
+		} catch (CommandException e2) {
+			e2.printStackTrace();
+		}
+		try {
+			Sponge.getCommandManager().get("effect").get().getCallable().process(Sponge.getServer().getConsole(), "@a clear");
+		} catch (CommandException e2) {
+			e2.printStackTrace();
 		}
 		try {
 			Sponge.getCommandManager().get("tickrate").get().getCallable().process(Sponge.getServer().getConsole(), "20");
