@@ -87,13 +87,14 @@ public class FFA {
 	
 	public static ArrayList<String> players = new ArrayList<>();
 	
+	public static StatisticsConfig config;
+	
 	public static ConfigurationNode node;
 	
 	public static String mapname;
 	
 	public ConfigurationNode loadConfig() throws IOException {
 		potentialFile = Paths.get(privateConfigDir.toString(), "config.yml");
-		
 		if (!potentialFile.toFile().exists()) {
 			privateConfigDir.toFile().mkdir();
 			potentialFile.toFile().createNewFile();
@@ -103,7 +104,8 @@ public class FFA {
 			configManager = HoconConfigurationLoader.builder().setPath(potentialFile).build();
 			node = configManager.load();
 		}
-		
+		config = new StatisticsConfig();
+		config.loadStats(privateConfigDir.toFile());
 		if (node.getNode("equipPos").getString() == null) node.getNode("equipPos").setValue("100 100 100");
 		if (node.getNode("pvpPos").getString() == null) node.getNode("pvpPos").setValue("50 100 50");
 		if (node.getNode("chestPos").getString() == null) node.getNode("chestPos").setValue("100 100 50");
@@ -276,6 +278,7 @@ public class FFA {
 		Sponge.getCommandManager().register(this, forcestart, "forcestart");
 		Sponge.getCommandManager().register(this, mapreload, "reloadmap");
 		Sponge.getCommandManager().register(this, ready, "ready");
+		Sponge.getCommandManager().register(this, config, "statistics");
 		Sponge.getCommandManager().register(this, editInv, "setitems");
 		Sponge.getCommandManager().register(this, stopmapreload, "reloadmapstop");
 		Sponge.getCommandManager().register(this, new CommandFFAConfig(), "ffa");
@@ -366,6 +369,20 @@ public class FFA {
 	@Listener
 	public void onPvP(DamageEntityEvent e) {
 		Cause cause=e.getCause();
+		
+		if (isRunning && e.willCauseDeath()) {
+			for (Player p : Sponge.getServer().getOnlinePlayers()) {
+				if (e.getCause().getContext().toString().contains(p.getName())) {
+					config.updateStats(p, 1, 0, 0, 0);
+				}
+			}
+			try {
+				config.updateStats((Player) e.getTargetEntity(), 0, 1, 1, 0);
+			} catch (Exception e2) {
+				
+			}
+		}
+		
 		Optional<DamageSource> source=cause.first(DamageSource.class);
 		if (!isRunning&&source.get()!=DamageSources.VOID) e.setCancelled(true);
 	}
@@ -377,8 +394,7 @@ public class FFA {
 	}
 	
 	@Listener
-	public void onDeath(DestructEntityEvent.Death e) throws CommandException {
-		
+	public void onDeath(DestructEntityEvent.Death e) {
 		if (e.getTargetEntity().getType() == EntityTypes.PLAYER) {
 			if (players.contains(((Player) e.getTargetEntity()).getName())) {
 				players.remove(((Player) e.getTargetEntity()).getName());
@@ -386,6 +402,7 @@ public class FFA {
 			}
 			if (players.size() == 1) {
 				Player winner = Sponge.getServer().getPlayer(players.get(0)).get();
+				config.updateStats(winner, 0, 0, 1, 1);
 				for (Player player : Sponge.getGame().getServer().getOnlinePlayers()) {
 					player.sendTitle(Title.of(Text.of(winner.getName() + " won!")));
 				}
