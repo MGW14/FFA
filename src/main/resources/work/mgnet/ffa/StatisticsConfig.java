@@ -152,26 +152,26 @@ public class StatisticsConfig implements CommandCallable {
 		
 	}
 	
-    public void loadStats(File configDir) throws IOException {
-        statsFile = new File(configDir, "stats.yml");
-        if (statsFile.exists()) {
-            BufferedReader reader = new BufferedReader(new FileReader(statsFile));
-            String[] serializedStats;
-            try {
-                serializedStats = reader.readLine().split(";");
-            }catch(NullPointerException e) {
-                System.err.println("Stats file is empty");
-                reader.close();
-                return;
-            }
-            for (String serializedStat : serializedStats) {
-                stats.add(Stats.fromString(serializedStat));
-            }
-            reader.close();
-        } else {
-            statsFile.createNewFile();
-        }
-    }
+	public void loadStats(File configDir) throws IOException {
+		statsFile = new File(configDir, "stats.yml");
+		if (statsFile.exists()) {
+			BufferedReader reader = new BufferedReader(new FileReader(statsFile));
+			String[] serializedStats;
+			try {
+				serializedStats = reader.readLine().split(";");
+			}catch(NullPointerException e) {
+				System.err.println("Stats file is empty");
+				reader.close();
+				return;
+			}
+			for (String serializedStat : serializedStats) {
+				stats.add(Stats.fromString(serializedStat));
+			}
+			reader.close();
+		} else {
+			statsFile.createNewFile();
+		}
+	}
 
 	@Override
 	public CommandResult process(CommandSource source, String arguments) throws CommandException {
@@ -193,10 +193,12 @@ public class StatisticsConfig implements CommandCallable {
 			source.sendMessage(Text.of("§b» §7Games played: §b" + stats.games));
 			source.sendMessage(Text.of("§b» §7Games won: §b" + stats.gamesWon));
 			source.sendMessage(Text.of("§b» §7Win chance: §b" + (stats.gamesWon / stats.games * 100) + "%"));
+		} catch (ArithmeticException e1) {
+			source.sendMessage(Text.of("§b» §7Win chance: Not enough data!"));
 		} catch (Exception e) {
 			source.sendMessage(Text.of("§b» §7Couldn't show stats!"));
 		}
-		return null;
+		return CommandResult.builder().successCount(1).build();
 		
 	}
 
