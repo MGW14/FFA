@@ -152,19 +152,26 @@ public class StatisticsConfig implements CommandCallable {
 		
 	}
 	
-	public void loadStats(File configDir) throws IOException {
-		statsFile = new File(configDir, "stats.yml");
-		if (statsFile.exists()) {
-			BufferedReader reader = new BufferedReader(new FileReader(statsFile));
-			String[] serializedStats = reader.readLine().split(";");
-			for (String serializedStat : serializedStats) {
-				stats.add(Stats.fromString(serializedStat));
-			}
-			reader.close();
-		} else {
-			statsFile.createNewFile();
-		}
-	}
+    public void loadStats(File configDir) throws IOException {
+        statsFile = new File(configDir, "stats.yml");
+        if (statsFile.exists()) {
+            BufferedReader reader = new BufferedReader(new FileReader(statsFile));
+            String[] serializedStats;
+            try {
+                serializedStats = reader.readLine().split(";");
+            }catch(NullPointerException e) {
+                System.err.println("Stats file is empty");
+                reader.close();
+                return;
+            }
+            for (String serializedStat : serializedStats) {
+                stats.add(Stats.fromString(serializedStat));
+            }
+            reader.close();
+        } else {
+            statsFile.createNewFile();
+        }
+    }
 
 	@Override
 	public CommandResult process(CommandSource source, String arguments) throws CommandException {

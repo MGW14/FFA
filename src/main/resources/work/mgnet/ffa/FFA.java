@@ -370,7 +370,7 @@ public class FFA {
 	public void onPvP(DamageEntityEvent e) {
 		Cause cause=e.getCause();
 		
-		if (isRunning && e.willCauseDeath()) {
+		if (isRunning && e.willCauseDeath() && e.getTargetEntity().getType() == EntityTypes.PLAYER) {
 			for (Player p : Sponge.getServer().getOnlinePlayers()) {
 				if (e.getCause().getContext().toString().contains(p.getName())) {
 					config.updateStats(p, 1, 0, 0, 0);
