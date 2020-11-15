@@ -18,6 +18,8 @@ public class CommandFFAConfig implements CommandCallable{
 
 	@Override
 	public CommandResult process(CommandSource source, String arguments) throws CommandException {
+		if (!source.hasPermission("mgw.edit")) return CommandResult.builder().successCount(1).build();
+		
 		String[] args=arguments.split(" ");
 		if(args[0].equalsIgnoreCase("pvpPos")) {
 			FFA.pvpLocation=setCoordinates("pvpPos", args);
