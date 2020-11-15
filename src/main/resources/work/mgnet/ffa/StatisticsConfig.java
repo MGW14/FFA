@@ -192,7 +192,7 @@ public class StatisticsConfig implements CommandCallable {
 			source.sendMessage(Text.of("§b» §7K/D: §b" + Math.round((double) stats.kills / ((stats.deaths == 0) ? 1 : stats.deaths))));
 			source.sendMessage(Text.of("§b» §7Games played: §b" + stats.games));
 			source.sendMessage(Text.of("§b» §7Games won: §b" + stats.gamesWon));
-			source.sendMessage(Text.of("§b» §7Win chance: §b" + ((stats.gamesWon / stats.games) * 100) + "%"));
+			source.sendMessage(Text.of("§b» §7Win chance: §b" + ((((double) stats.gamesWon) / ((double) stats.games)) * 100) + "%"));
 		} catch (ArithmeticException e1) {
 			source.sendMessage(Text.of("§b» §7Win chance: Not enough data!"));
 		} catch (Exception e) {

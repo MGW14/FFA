@@ -361,16 +361,18 @@ public class FFA {
 	
 	@Listener
 	public void onDrop(DropItemEvent e) {
-		Cause cause=e.getCause();
+		try {Cause cause=e.getCause();
 		Optional<Player> player= cause.first(Player.class);
-		if (!isRunning&&!player.get().hasPermission("mgw.bypasslobby")) e.setCancelled(true);
+		if (!isRunning&&!player.get().hasPermission("mgw.bypasslobby")) e.setCancelled(true);} catch (Exception e3) {
+			
+		}
 	}
 	
 	@Listener
 	public void onPvP(DamageEntityEvent e) {
 		Cause cause=e.getCause();
 		
-		if (isRunning && e.willCauseDeath() && e.getTargetEntity().getType() == EntityTypes.PLAYER) {
+		try {if (isRunning && e.willCauseDeath() && e.getTargetEntity().getType() == EntityTypes.PLAYER) {
 			for (Player p : Sponge.getServer().getOnlinePlayers()) {
 				if (e.getCause().getContext().toString().contains(p.getName())) {
 					config.updateStats(p, 1, 0, 0, 0);
@@ -384,7 +386,9 @@ public class FFA {
 		}
 		
 		Optional<DamageSource> source=cause.first(DamageSource.class);
-		if (!isRunning&&source.get()!=DamageSources.VOID) e.setCancelled(true);
+		if (!isRunning&&source.get()!=DamageSources.VOID) e.setCancelled(true);} catch (Exception e3) {
+			
+		}
 	}
 	
 	@Listener
