@@ -105,21 +105,21 @@ public class StatisticsConfig implements CommandCallable {
 				updateRank("beginner", uuid);
 			} else if (stat.games == 20) {
 				if (stat.kills > 4) {
-					updateRank("noob", uuid);
-				} else {
 					updateRank("fighter", uuid);
+				} else {
+					updateRank("noob", uuid);
 				}
 			} else if (stat.games == 50) {
 				if (stat.kills > 35) {
-					updateRank("intermediate", uuid);
-				} else {
 					updateRank("advanced", uuid);
+				} else {
+					updateRank("intermediate", uuid);
 				}
 			} else if (stat.games == 100) {
 				if (stat.kills > 150) {
-					updateRank("pro", uuid);
-				} else {
 					updateRank("taslegend", uuid);
+				} else {
+					updateRank("pro", uuid);
 				}
 			}
 			
@@ -192,7 +192,7 @@ public class StatisticsConfig implements CommandCallable {
 			source.sendMessage(Text.of("§b» §7K/D: §b" + Math.round((double) stats.kills / ((stats.deaths == 0) ? 1 : stats.deaths))));
 			source.sendMessage(Text.of("§b» §7Games played: §b" + stats.games));
 			source.sendMessage(Text.of("§b» §7Games won: §b" + stats.gamesWon));
-			source.sendMessage(Text.of("§b» §7Win chance: §b" + (stats.gamesWon / stats.games * 100) + "%"));
+			source.sendMessage(Text.of("§b» §7Win chance: §b" + ((stats.gamesWon / stats.games) * 100) + "%"));
 		} catch (ArithmeticException e1) {
 			source.sendMessage(Text.of("§b» §7Win chance: Not enough data!"));
 		} catch (Exception e) {
