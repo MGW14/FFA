@@ -1,15 +1,20 @@
 package work.mgnet.ffa;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.block.tileentity.carrier.Chest;
 import org.spongepowered.api.command.CommandException;
 import org.spongepowered.api.command.CommandResult;
 import org.spongepowered.api.command.CommandSource;
@@ -18,6 +23,7 @@ import org.spongepowered.api.command.spec.CommandExecutor;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.config.DefaultConfig;
+import org.spongepowered.api.data.DataView;
 import org.spongepowered.api.data.key.Keys;
 import org.spongepowered.api.effect.sound.SoundTypes;
 import org.spongepowered.api.entity.EntityTypes;
@@ -31,10 +37,10 @@ import org.spongepowered.api.event.entity.DamageEntityEvent;
 import org.spongepowered.api.event.entity.DestructEntityEvent;
 import org.spongepowered.api.event.game.state.GameStartedServerEvent;
 import org.spongepowered.api.event.item.inventory.DropItemEvent;
+import org.spongepowered.api.event.item.inventory.InteractInventoryEvent;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
 import org.spongepowered.api.item.inventory.Inventory;
 import org.spongepowered.api.item.inventory.InventoryArchetypes;
-import org.spongepowered.api.item.inventory.ItemStack;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.title.Title;
@@ -92,6 +98,35 @@ public class FFA {
 	public static ConfigurationNode node;
 	
 	public static String mapname;
+	
+	public void saveKit(String name, Inventory inventory) throws Exception {
+		File kitFile = Paths.get(privateConfigDir.toString(), name + ".kit").toFile();
+		if (!kitFile.exists()) kitFile.createNewFile();
+		ArrayList<DataView> items = InventorySerializer.serializeInventory(inventory);
+		ArrayList<String> itemsS = new ArrayList<>();
+		
+		for (DataView dataView : items) {
+			
+		}
+		
+		new PrintWriter(kitFile).close();
+		ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(kitFile));
+		oos.writeObject(items);
+		oos.close();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Inventory loadKit(String name) throws Exception {
+		File kitFile = Paths.get(privateConfigDir.toString(), name + ".kit").toFile();
+		if (!kitFile.exists()) throw new Exception();
+		List<DataView> items;
+		ObjectInputStream oos = new ObjectInputStream(new FileInputStream(kitFile));
+		items = (List<DataView>) oos.readObject();
+		oos.close();
+		Inventory inv = Inventory.builder().of(InventoryArchetypes.DOUBLE_CHEST).build(this);
+		InventorySerializer.deserializeInventory(items, inv);
+		return inv;
+	}
 	
 	public ConfigurationNode loadConfig() throws IOException {
 		potentialFile = Paths.get(privateConfigDir.toString(), "config.yml");
@@ -155,6 +190,8 @@ public class FFA {
 		}
 	}
 	
+	public ArrayList<String> edit = new ArrayList<>();
+	
 	@Listener
 	public void onServer(GameStartedServerEvent e) throws IOException, ObjectMappingException {
 		node = loadConfig();
@@ -211,8 +248,19 @@ public class FFA {
 			public CommandResult execute(CommandSource src, CommandContext args) throws CommandException {
 				Player p = (Player) src;
 				p.playSound(SoundTypes.BLOCK_NOTE_BELL, p.getLocation().getPosition(), 1.0);
-				Inventory source = ((Chest) chestLocation.getTileEntity().get()).getDoubleChestInventory().get();
-				p.openInventory(source);
+				
+				/*Inventory source = ((Chest) chestLocation.getTileEntity().get()).getDoubleChestInventory().get();
+				p.openInventory(source);*/
+				
+				try {
+					p.openInventory(loadKit("test"));
+				} catch (Exception e) {
+					e.printStackTrace();
+					p.openInventory(Inventory.builder().of(InventoryArchetypes.DOUBLE_CHEST).build(Sponge.getPluginManager().getPlugin("ffa").get()));
+				}
+				
+				edit.add(p.getName());
+				
 				return CommandResult.builder().successCount(1).affectedItems(0).build();
 			}
 		}).build();
@@ -251,7 +299,13 @@ public class FFA {
 					return CommandResult.builder().successCount(1).affectedItems(0).build();
 				}
 				
-				Inventory source = ((Chest) chestLocation.getTileEntity().get()).getDoubleChestInventory().get();
+				try {
+					p.openInventory(loadKit("test"));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+				/*Inventory source = ((Chest) chestLocation.getTileEntity().get()).getDoubleChestInventory().get();
 				Inventory dest = Inventory.builder().of(InventoryArchetypes.DOUBLE_CHEST).build(Sponge.getPluginManager().getPlugins().iterator().next());
 				ArrayList<ItemStack> stacks = new ArrayList<>();
 				for (int i = 0; i < 54; i++) {
@@ -267,7 +321,7 @@ public class FFA {
 					source.offer(itemStack);
 				}
 				inves.put(p.getName(), dest);
-				p.openInventory(dest);
+				p.openInventory(dest);*/
 				return CommandResult.builder().successCount(1).affectedItems(0).build();
 			}
 		}).build();
@@ -426,4 +480,14 @@ public class FFA {
 			System.out.println("No schematic file found!");
 		}
 	}
+	
+	@Listener
+	public void onInv(InteractInventoryEvent.Close e) throws Exception {
+		if (edit.contains(((Player) e.getSource()).getName())) {
+			saveKit("test", e.getTargetInventory());
+			System.out.println("wtf");
+			edit.remove(((Player) e.getSource()).getName());
+		}
+	}
+	
 }
