@@ -1,6 +1,7 @@
 package work.mgnet.ffa;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -97,15 +98,18 @@ public class CommandFFAConfig implements CommandCallable{
 	@Override
 	public List<String> getSuggestions(CommandSource source, String arguments, Location<World> targetPosition)
 			throws CommandException {
-		List<String> liste= new ArrayList<String>();
-		liste.add("pvpPos");
-		liste.add("chestPos");
-		liste.add("equipPos");
-		liste.add("tickrate");
-		liste.add("spreadPlayerRadius");
-		liste.add("spreadPlayerDistance");
-		liste.add("mapname");
-		return liste;
+		Collection<String> liste= new ArrayList<String>();
+		String[] args=arguments.split(" ");
+		if(args.length==1) {
+			liste.add("pvpPos");
+			liste.add("chestPos");
+			liste.add("equipPos");
+			liste.add("tickrate");
+			liste.add("spreadPlayerRadius");
+			liste.add("spreadPlayerDistance");
+			liste.add("mapname");
+		}
+		return CommandUtil.getListOfStringsMatchingLastWord(args, liste);
 	}
 
 	@Override
