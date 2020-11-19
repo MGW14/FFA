@@ -206,7 +206,13 @@ public class StatisticsConfig implements CommandCallable {
 	public List<String> getSuggestions(CommandSource source, String arguments, Location<World> targetPosition)
 			throws CommandException {
 		List<String> liste= new ArrayList<String>();
-		return liste;
+		String[] args=arguments.split(" ");
+		if(args.length==1) {
+			Sponge.getGame().getServer().getOnlinePlayers().forEach(player->{
+				liste.add(player.getName());
+			});
+		}
+		return CommandUtil.getListOfStringsMatchingLastWord(args, liste);
 	}
 
 	@Override
