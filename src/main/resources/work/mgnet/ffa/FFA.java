@@ -327,15 +327,19 @@ public class FFA {
 		}).build();
 		
 		
-		Sponge.getCommandManager().register(this, getInv, "items");
-		Sponge.getCommandManager().register(this, forceend, "forceend");
-		Sponge.getCommandManager().register(this, forcestart, "forcestart");
-		Sponge.getCommandManager().register(this, mapreload, "reloadmap");
-		Sponge.getCommandManager().register(this, ready, "ready");
-		Sponge.getCommandManager().register(this, config, "statistics");
-		Sponge.getCommandManager().register(this, editInv, "setitems");
-		Sponge.getCommandManager().register(this, stopmapreload, "reloadmapstop");
-		Sponge.getCommandManager().register(this, new CommandFFAConfig(), "ffa");
+		Sponge.getCommandManager().register(this, getInv, "items"); // ScribbleLP
+		Sponge.getCommandManager().register(this, forceend, "forceend");// Done
+		Sponge.getCommandManager().register(this, forcestart, "forcestart"); // Done 
+		Sponge.getCommandManager().register(this, mapreload, "reloadmap"); // Done
+		
+		Sponge.getCommandManager().register(this, ready, "ready"); // Done
+		
+		Sponge.getCommandManager().register(this, config, "statistics"); // Done
+		
+		Sponge.getCommandManager().register(this, editInv, "setitems"); // ScribbleLP
+		
+		Sponge.getCommandManager().register(this, stopmapreload, "reloadmapstop"); // Dunno
+		Sponge.getCommandManager().register(this, new CommandFFAConfig(), "ffa");  // ScribbleLP
 	}
 	
 	@Listener
